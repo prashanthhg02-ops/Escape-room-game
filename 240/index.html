@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111522">
+  <title>The Last Light — Escape Room</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+
+    :root {
+      color-scheme: dark;
+      --ink: #e8e2d5;
+      --muted: #9c9aa4;
+      --gold: #d7b777;
+      --panel: #171b27;
+      --line: rgba(232, 226, 213, .13);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      background: radial-gradient(ellipse at 50% -20%, #303248 0, #171b27 48%, #10131d 100%);
+      color: var(--ink);
+      font-family: "DM Sans", sans-serif;
+    }
+
+    button { font: inherit; }
+
+    .shell { max-width: 1440px; margin: auto; padding: 24px clamp(16px, 4vw, 58px) 28px; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-mark { color: var(--gold); font-size: 24px; }
+    .eyebrow, .label, .timer, .room-number, .inventory-count {
+      font-family: "DM Mono", monospace;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .eyebrow { color: var(--gold); font-size: 10px; }
+    .brand-name { margin-top: 3px; font-size: 13px; letter-spacing: .13em; }
+    .top-right { display: flex; align-items: center; gap: 24px; }
+    .timer { color: var(--muted); font-size: 11px; letter-spacing: .08em; }
+    .timer strong { color: var(--ink); font-weight: 500; }
+    .icon-button, .text-button {
+      color: var(--ink);
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.035);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+    }
+    .icon-button { width: 36px; height: 36px; font-size: 16px; }
+    .icon-button:hover, .text-button:hover { background: rgba(215,183,119,.12); border-color: rgba(215,183,119,.5); }
+
+    .intro { padding: 25px 0 18px; }
+    .intro h1 {
+      margin: 0;
+      font: 600 clamp(25px, 3vw, 38px)/1.15 "Playfair Display", Georgia, serif;
+      letter-spacing: -.025em;
+    }
+    .intro p { margin: 8px 0 0; color: var(--muted); font-size: 13px; }
+
+    .game-layout { display: grid; grid-template-columns: minmax(0, 1fr) 248px; gap: 18px; align-items: stretch; }
+    .scene-wrap {
+      position: relative;
+      aspect-ratio: 1.83;
+      min-height: 340px;
+      overflow: hidden;
+      border: 1px solid rgba(215,183,119,.25);
+      border-radius: 9px;
+      background: #222638;
+      isolation: isolate;
+      box-shadow: 0 24px 70px #080a10a6, inset 0 0 70px #080a1080;
+    }
+
+    .scene {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 71% 28%, #7883a13b 0, transparent 33%),
+        linear-gradient(180deg, #34394f 0%, #272b3c 59%, #3b342f 60%, #29251f 100%);
+    }
+    .scene::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+      background: linear-gradient(90deg, #0d111c64, transparent 24%, transparent 76%, #0d111c70),
+        linear-gradient(0deg, #070a1180, transparent 37%, #11152233);
+    }
+    .wall-trim { position: absolute; top: 60%; left: 0; width: 100%; height: 9px; background: #171b27; box-shadow: 0 3px 0 #645342; }
+    .floor {
+      position: absolute; inset: 62% 0 0;
+      background: repeating-linear-gradient(90deg, transparent 0 17%, #120f0d1b 17.2% 17.5%),
+        linear-gradient(180deg, #453b33, #29241f);
+    }
+    .floor::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(174deg, transparent 0 42px, #a18a6a17 43px, transparent 44px 85px); }
+    .moon-window {
+      position: absolute; left: 8%; top: 9%; width: 23%; height: 43%;
+      border: 9px solid #171b27; border-radius: 50% 50% 4px 4px;
+      background: radial-gradient(circle at 72% 31%, #f5e5bb 0 5%, transparent 5.5%),
+        radial-gradient(circle at 37% 26%, #d7d2c2 0 1px, transparent 2px),
+        radial-gradient(circle at 68% 63%, #e8dfc7 0 1px, transparent 2px),
+        radial-gradient(ellipse at 60% 48%, #8290a8 0, #44516a 32%, #20283a 74%);
+      box-shadow: 0 0 32px #9ca9cc40, inset 0 0 20px #111522aa;
+    }
+    .moon-window::before { content: ""; position: absolute; left: 48%; top: 0; height: 100%; width: 7px; background: #171b27; }
+    .moon-window::after { content: ""; position: absolute; top: 49%; left: 0; height: 7px; width: 100%; background: #171b27; }
+    .curtain { position: absolute; z-index: 1; top: 7%; left: 5.5%; width: 27%; height: 49%; border-inline: 8px solid #343141; pointer-events: none; }
+    .curtain::before, .curtain::after { content: ""; position: absolute; top: 0; bottom: 0; width: 24px; background: linear-gradient(90deg, #524755, #302b3c); }
+    .curtain::before { left: -8px; border-radius: 0 0 60% 0; }
+    .curtain::after { right: -8px; border-radius: 0 0 0 60%; }
+    .rug {
+      position: absolute; z-index: 1; left: 25%; bottom: -18%; width: 48%; height: 39%;
+      border-radius: 50%; transform: perspective(200px) rotateX(16deg);
+      background: radial-gradient(ellipse, #52433c 0 48%, #8b7055 49% 51%, #382f2f 52% 66%, transparent 67%);
+      opacity: .8;
+    }
+    .desk {
+      position: absolute; z-index: 2; left: 39%; bottom: 23%; width: 29%; height: 24%;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(180deg, #72563e 0 17%, #4f392e 18% 70%, #332720 71%);
+      box-shadow: 0 9px 14px #0e0e15a0;
+    }
+    .desk::before { content: ""; position: absolute; left: -5%; top: -11%; width: 110%; height: 18px; border-radius: 3px; background: linear-gradient(#947454, #624936); }
+    .desk::after { content: ""; position: absolute; left: 10%; right: 10%; bottom: -31%; height: 33%; border-inline: 8px solid #382a23; }
+    .desk-lamp {
+      position: absolute; z-index: 3; left: 58%; bottom: 47%; width: 7%; height: 13%;
+      border-bottom: 5px solid #b39461;
+      background: linear-gradient(105deg, transparent 43%, #a28a69 45% 52%, transparent 54%);
+    }
+    .desk-lamp::before {
+      content: ""; position: absolute; left: -11%; top: -30%; width: 125%; height: 48%;
+      clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%); background: #d2ac70;
+      filter: drop-shadow(0 0 12px #f4cb796b);
+    }
+    .lamp-glow { position: absolute; z-index: 1; left: 48%; bottom: 34%; width: 25%; height: 23%; background: radial-gradient(ellipse, #d6aa5140, transparent 72%); }
+    .bookcase {
+      position: absolute; z-index: 2; right: 8%; bottom: 22%; width: 18%; height: 54%;
+      border: 9px solid #352921; border-bottom-width: 0;
+      background: repeating-linear-gradient(180deg, transparent 0 30%, #493426 30.5% 33%, transparent 33.5% 63%, #493426 63.5% 67%, transparent 67.5%);
+      box-shadow: inset 0 0 18px #120e0c, 0 8px 14px #11131c70;
+    }
+    .books {
+      position: absolute; inset: 8% 6%;
+      background:
+        linear-gradient(90deg, #9b6449 0 9%, transparent 9% 12%, #72836b 12% 21%, transparent 21% 25%, #c3a26e 25% 35%, transparent 35% 39%, #665d79 39% 51%, transparent 51% 56%, #9d7253 56% 68%, transparent 68% 73%, #72836b 73% 83%, transparent 83% 87%, #b59162 87% 96%, transparent 96%) 0 7% / 100% 28% no-repeat,
+        linear-gradient(90deg, #6f806a 0 14%, transparent 14% 20%, #9b6449 20% 34%, transparent 34% 39%, #b59162 39% 55%, transparent 55% 61%, #665d79 61% 73%, transparent 73% 78%, #8c604c 78% 96%, transparent 96%) 0 39% / 100% 28% no-repeat,
+        linear-gradient(90deg, #b59162 0 10%, transparent 10% 14%, #665d79 14% 29%, transparent 29% 33%, #72836b 33% 48%, transparent 48% 53%, #9b6449 53% 69%, transparent 69% 74%, #b59162 74% 89%, transparent 89%) 0 72% / 100% 28% no-repeat;
+    }
+    .door {
+      position: absolute; z-index: 2; left: 7%; bottom: 14%; width: 18%; height: 56%;
+      border: 7px solid #302722; border-bottom: 0; border-radius: 72px 72px 0 0;
+      background: linear-gradient(90deg, #4b3b32, #634c3b 52%, #392c28);
+      box-shadow: inset 0 0 0 4px #83694c, inset 0 0 22px #17131a;
+    }
+    .door::before { content: ""; position: absolute; top: 20%; left: 15%; width: 70%; height: 55%; border: 2px solid #8e7451; border-radius: 58px 58px 0 0; opacity: .7; }
+    .door-knob { position: absolute; top: 57%; right: 15%; width: 9px; height: 9px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 10px #d7b77780; }
+    .painting {
+      position: absolute; z-index: 1; left: 42%; top: 12%; width: 15%; height: 25%;
+      border: 6px solid #856a4c; background: linear-gradient(160deg, #272d42 40%, #bb9862 41% 44%, #30364b 45%);
+      box-shadow: 0 5px 14px #11152280;
+    }
+    .painting::before { content: "✦"; position: absolute; top: 14%; left: 43%; color: #e9d8b2; font-size: 20px; text-shadow: 0 0 10px #fff; }
+    .painting::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 34%; background: linear-gradient(145deg, transparent 45%, #171d2d 46%); }
+    .clock {
+      position: absolute; z-index: 2; top: 17%; right: 34%; width: 8%; aspect-ratio: 1;
+      border: 4px solid #b29467; border-radius: 50%; background: #20232f; box-shadow: 0 0 0 3px #43362f;
+    }
+    .clock::before { content: ""; position: absolute; left: 49%; top: 17%; height: 35%; width: 2px; background: #e2d2ae; transform-origin: bottom; transform: rotate(38deg); }
+    .clock::after { content: ""; position: absolute; left: 49%; top: 48%; height: 3px; width: 28%; background: #e2d2ae; transform-origin: left; transform: rotate(-15deg); }
+
+    .hotspot {
+      position: absolute; z-index: 6; border: 1px solid transparent; border-radius: 5px;
+      background: transparent; cursor: pointer; transition: background .2s, border .2s;
+    }
+    .hotspot:hover, .hotspot:focus-visible { outline: none; border-color: #e4c583a6; background: #e4c58318; }
+    .hotspot::after {
+      content: attr(aria-label); position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translate(-50%, 4px);
+      padding: 6px 9px; border: 1px solid #d7b77755; border-radius: 4px; background: #151823eF;
+      color: var(--ink); font: 10px "DM Mono", monospace; letter-spacing: .08em; white-space: nowrap;
+      opacity: 0; pointer-events: none; transition: opacity .16s, transform .16s;
+    }
+    .hotspot:hover::after, .hotspot:focus-visible::after { opacity: 1; transform: translate(-50%, 0); }
+    .spot-door { left: 7%; bottom: 14%; width: 18%; height: 56%; border-radius: 70px 70px 0 0; }
+    .spot-picture { left: 42%; top: 12%; width: 15%; height: 25%; }
+    .spot-clock { top: 17%; right: 34%; width: 8%; aspect-ratio: 1; border-radius: 50%; }
+    .spot-desk { left: 39%; bottom: 20%; width: 29%; height: 29%; }
+    .spot-books { right: 8%; bottom: 22%; width: 18%; height: 54%; }
+    .spot-window { left: 7%; top: 8%; width: 25%; height: 48%; border-radius: 45% 45% 0 0; }
+
+    .scene-caption {
+      position: absolute; z-index: 7; left: 16px; bottom: 13px; color: #e8e2d5a3;
+      font: 9px "DM Mono", monospace; letter-spacing: .12em; text-transform: uppercase; pointer-events: none;
+    }
+    .side-panel { display: flex; flex-direction: column; gap: 12px; }
+    .panel-card { padding: 16px; border: 1px solid var(--line); border-radius: 8px; background: linear-gradient(145deg, #1d2230, #171b26); }
+    .label { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 9px; }
+    .inventory-count { color: #777784; font-size: 9px; }
+    .inventory-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-top: 14px; }
+    .inventory-slot {
+      display: grid; place-items: center; aspect-ratio: 1; border: 1px solid #ffffff0f; border-radius: 5px;
+      background: #10131b65; color: var(--gold); font-size: 20px;
+    }
+    .inventory-slot.empty { color: #474956; font-size: 13px; }
+    .inventory-name { margin-top: 10px; color: var(--muted); font-size: 11px; min-height: 14px; }
+    .journal { min-height: 123px; margin-top: 13px; color: #c4c0b9; font-size: 12px; line-height: 1.65; }
+    .journal p { margin: 0 0 10px; }
+    .journal .empty-note { color: #797986; font-style: italic; }
+    .text-button { padding: 10px 12px; font-size: 11px; }
+    .hint-button { width: 100%; margin-top: auto; color: var(--gold); }
+    .status-line { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 10px; }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #d5b273; box-shadow: 0 0 8px #d5b2738a; }
+
+    .interaction {
+      display: none; position: absolute; z-index: 10; inset: 0; align-items: center; justify-content: center;
+      padding: 20px; background: #0c0f17c9; backdrop-filter: blur(5px);
+    }
+    .interaction.open { display: flex; }
+    .dialog {
+      width: min(390px, 100%); padding: 24px; border: 1px solid #d7b77766; border-radius: 8px;
+      background: linear-gradient(150deg, #242838, #171a25); box-shadow: 0 18px 60px #0009;
+      animation: rise .2s ease-out;
+    }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+    .dialog-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+    .dialog h2 { margin: 0; font: 600 23px "Playfair Display", Georgia, serif; }
+    .dialog p { color: #b6b2b1; font-size: 13px; line-height: 1.65; }
+    .dialog .small { color: var(--muted); font-size: 11px; }
+    .close-button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 20px; }
+    .code-form { display: flex; gap: 8px; margin-top: 16px; }
+    .code-input {
+      min-width: 0; flex: 1; padding: 11px 12px; border: 1px solid #ffffff25; border-radius: 5px;
+      outline: none; background: #10131b; color: var(--ink); font: 18px "DM Mono", monospace; letter-spacing: .35em;
+    }
+    .code-input:focus { border-color: var(--gold); }
+    .gold-button { padding: 0 17px; border: 0; border-radius: 5px; background: var(--gold); color: #201d1a; font-weight: 700; cursor: pointer; }
+    .gold-button:hover { background: #e7cc91; }
+    .error-message { min-height: 18px; margin: 9px 0 0 !important; color: #e59b89 !important; font-size: 11px !important; }
+    .item-art { margin: 20px auto 10px; width: 76px; height: 76px; display: grid; place-items: center; border: 1px solid #d7b77766; border-radius: 50%; background: #d7b77712; color: var(--gold); font-size: 32px; }
+
+    .win-screen { display: none; position: fixed; z-index: 20; inset: 0; place-items: center; padding: 24px; background: #0b0d14ed; backdrop-filter: blur(8px); }
+    .win-screen.open { display: grid; }
+    .win-card { max-width: 480px; text-align: center; }
+    .win-card .star { color: var(--gold); font-size: 38px; }
+    .win-card h2 { margin: 12px 0; font: 600 clamp(32px, 6vw, 50px) "Playfair Display", Georgia, serif; }
+    .win-card p { color: #b6b2b1; line-height: 1.7; }
+    .win-card .gold-button { padding: 12px 20px; margin-top: 12px; }
+    .footer { margin-top: 15px; color: #747682; text-align: center; font: 9px "DM Mono", monospace; letter-spacing: .1em; }
+
+    @media (max-width: 760px) {
+      .shell { padding: 16px 14px 20px; }
+      .game-layout { grid-template-columns: 1fr; }
+      .scene-wrap { min-height: 0; aspect-ratio: 1.15; }
+      .side-panel { display: grid; grid-template-columns: 1fr 1fr; align-items: stretch; }
+      .inventory-card { grid-row: span 2; }
+      .inventory-grid { grid-template-columns: repeat(4, 1fr); }
+      .journal { min-height: 74px; }
+      .hint-button { margin-top: 0; }
+      .top-right { gap: 12px; }
+      .timer { font-size: 9px; }
+      .intro { padding: 20px 0 14px; }
+    }
+    @media (max-width: 430px) {
+      .scene-wrap { aspect-ratio: .94; }
+      .side-panel { grid-template-columns: 1fr; }
+      .inventory-card { grid-row: auto; }
+      .inventory-slot { max-height: 52px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">✦</span>
+        <div><div class="eyebrow">A little midnight mystery</div><div class="brand-name">NIGHTFALL GAMES</div></div>
+      </div>
+      <div class="top-right">
+        <div class="timer">TIME IN ROOM &nbsp;<strong id="timer">00:00</strong></div>
+        <button class="icon-button" id="restart" type="button" aria-label="Restart game" title="Start over">↺</button>
+      </div>
+    </header>
+
+    <section class="intro">
+      <h1>The Last Light</h1>
+      <p>The observatory is locked. The storm is getting closer. Find your way out.</p>
+    </section>
+
+    <section class="game-layout" aria-label="Escape room game">
+      <div class="scene-wrap" id="scene-wrap">
+        <div class="scene" role="img" aria-label="A moonlit observatory with a desk, bookcase, clock, and locked door">
+          <div class="moon-window"></div><div class="curtain"></div><div class="painting"></div><div class="clock"></div>
+          <div class="floor"></div><div class="wall-trim"></div><div class="rug"></div><div class="door"><span class="door-knob"></span></div>
+          <div class="lamp-glow"></div><div class="desk"></div><div class="desk-lamp"></div><div class="bookcase"><div class="books"></div></div>
+          <button class="hotspot spot-window" type="button" data-object="window" aria-label="Look at the window"></button>
+          <button class="hotspot spot-picture" type="button" data-object="painting" aria-label="Inspect the star chart"></button>
+          <button class="hotspot spot-clock" type="button" data-object="clock" aria-label="Inspect the clock"></button>
+          <button class="hotspot spot-desk" type="button" data-object="desk" aria-label="Search the desk"></button>
+          <button class="hotspot spot-books" type="button" data-object="bookcase" aria-label="Search the bookcase"></button>
+          <button class="hotspot spot-door" type="button" data-object="door" aria-label="Try the observatory door"></button>
+        </div>
+        <div class="scene-caption">OBSERVATORY 01 &nbsp;·&nbsp; CLICK TO EXPLORE</div>
+        <div class="interaction" id="interaction" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+          <div class="dialog" id="dialog-content"></div>
+        </div>
+      </div>
+
+      <aside class="side-panel">
+        <section class="panel-card inventory-card">
+          <div class="label"><span>Satchel</span><span class="inventory-count" id="inventory-count">0 / 4</span></div>
+          <div class="inventory-grid" id="inventory-grid" aria-label="Inventory"></div>
+          <div class="inventory-name" id="inventory-name">Your pockets are empty.</div>
+        </section>
+        <section class="panel-card">
+          <div class="label"><span>Field notes</span><span>✧</span></div>
+          <div class="journal" id="journal"><p class="empty-note">Clues you discover will be written here.</p></div>
+        </section>
+        <button class="text-button hint-button" id="hint-button" type="button">✧ &nbsp; I could use a hint</button>
+        <div class="status-line"><span class="status-dot"></span><span id="status">The observatory is quiet… for now.</span></div>
+      </aside>
+    </section>
+    <div class="footer">TAKE YOUR TIME &nbsp;·&nbsp; THERE'S NO WRONG WAY TO EXPLORE</div>
+  </main>
+
+  <div class="win-screen" id="win-screen" role="dialog" aria-modal="true" aria-labelledby="win-title">
+    <div class="win-card">
+      <div class="star">✦</div>
+      <div class="eyebrow">You made it out</div>
+      <h2 id="win-title">The night is yours.</h2>
+      <p>The old observatory door swings open. Cool night air rushes in, and somewhere above, the stars are still keeping time.</p>
+      <p class="small" id="final-time"></p>
+      <button class="gold-button" id="play-again" type="button">Play again</button>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      "use strict";
+
+      var state = {
+        startedAt: Date.now(),
+        items: [],
+        notes: [],
+        chartFound: false,
+        codeSolved: false,
+        keyFound: false,
+        hintLevel: 0,
+        finished: false
+      };
+
+      var interaction = document.getElementById("interaction");
+      var dialogContent = document.getElementById("dialog-content");
+      var journal = document.getElementById("journal");
+      var inventoryGrid = document.getElementById("inventory-grid");
+      var inventoryName = document.getElementById("inventory-name");
+      var status = document.getElementById("status");
+      var itemDetails = {
+        "Brass key": { icon: "⚿", description: "An old brass key, warm from the desk lamp." },
+        "Star chart": { icon: "✧", description: "A hand-drawn chart of the winter constellations." }
+      };
+
+      function elapsed() {
+        var seconds = Math.floor((Date.now() - state.startedAt) / 1000);
+        return String(Math.floor(seconds / 60)).padStart(2, "0") + ":" + String(seconds % 60).padStart(2, "0");
+      }
+
+      function addNote(text) {
+        if (state.notes.indexOf(text) === -1) state.notes.push(text);
+        renderJournal();
+      }
+
+      function renderJournal() {
+        if (!state.notes.length) {
+          journal.innerHTML = '<p class="empty-note">Clues you discover will be written here.</p>';
+          return;
+        }
+        journal.innerHTML = state.notes.map(function (note) {
+          return "<p>✦ &nbsp;" + note + "</p>";
+        }).join("");
+      }
+
+      function renderInventory() {
+        inventoryGrid.innerHTML = "";
+        for (var i = 0; i < 4; i += 1) {
+          var slot = document.createElement("div");
+          var item = state.items[i];
+          slot.className = "inventory-slot" + (item ? "" : " empty");
+          slot.textContent = item ? itemDetails[item].icon : "—";
+          if (item) slot.setAttribute("aria-label", item);
+          inventoryGrid.appendChild(slot);
+        }
+        document.getElementById("inventory-count").textContent = state.items.length + " / 4";
+        inventoryName.textContent = state.items.length
+          ? state.items.map(function (item) { return item; }).join("  ·  ")
+          : "Your pockets are empty.";
+      }
+
+      function addItem(name) {
+        if (state.items.indexOf(name) === -1 && state.items.length < 4) {
+          state.items.push(name);
+          renderInventory();
+          status.textContent = name + " added to your satchel.";
+        }
+      }
+
+      function openDialog(title, body, controls) {
+        dialogContent.innerHTML =
+          '<div class="dialog-head"><h2 id="dialog-title">' + title + '</h2>' +
+          '<button class="close-button" type="button" aria-label="Close">×</button></div>' +
+          body + (controls || "");
+        interaction.classList.add("open");
+        dialogContent.querySelector(".close-button").addEventListener("click", closeDialog);
+      }
+
+      function closeDialog() {
+        interaction.classList.remove("open");
+      }
+
+      function clue(title, text) {
+        openDialog(title, "<p>" + text + "</p>");
+      }
+
+      function showKeypad() {
+        openDialog("The desk drawer", '<p>A small brass keypad is set into the drawer. Three digits should do it.</p>' +
+          '<form class="code-form" id="code-form"><input class="code-input" id="code-input" aria-label="Three digit code" inputmode="numeric" pattern="[0-9]*" maxlength="3" autocomplete="off" placeholder="···">' +
+          '<button class="gold-button" type="submit">Unlock</button></form><p class="error-message" id="code-error" aria-live="polite"></p>');
+        var input = document.getElementById("code-input");
+        input.focus();
+        document.getElementById("code-form").addEventListener("submit", function (event) {
+          event.preventDefault();
+          if (input.value === "314") {
+            state.codeSolved = true;
+            state.keyFound = true;
+            addItem("Brass key");
+            addNote("The drawer held a brass key. It might fit the observatory door.");
+            closeDialog();
+            status.textContent = "The drawer clicks open.";
+            clue("A little reward", "Inside the drawer, beneath a velvet cloth, you find a brass key. The way out might finally be within reach.");
+          } else {
+            document.getElementById("code-error").textContent = "That doesn't sound right. Look around for another clue.";
+            input.value = "";
+            input.focus();
+          }
+        });
+      }
+
+      function explore(object) {
+        if (state.finished) return;
+        switch (object) {
+          case "window":
+            clue("The storm outside", "Rain streaks the glass. Beyond it, the moon hangs low over the pines. The room's old clock has stopped at 10:10.");
+            break;
+          case "painting":
+            if (!state.chartFound) {
+              state.chartFound = true;
+              addItem("Star chart");
+              addNote("A note on the chart reads: “The stars keep the time. Three, one, four — remember the order.”");
+              status.textContent = "A folded star chart was tucked behind the frame.";
+              openDialog("Behind the frame", '<div class="item-art" aria-hidden="true">✧</div><p>A folded star chart was tucked behind the painting. On its edge, someone wrote:</p><p><em>“The stars keep the time.<br>Three, one, four — remember the order.”</em></p>');
+            } else {
+              clue("The star chart", "A tiny handwritten note on the chart: “The stars keep the time. Three, one, four — remember the order.”");
+            }
+            break;
+          case "clock":
+            clue("The stopped clock", "Its hands are frozen at 10:10. The little brass plate below reads: “A moment worth remembering.”");
+            break;
+          case "desk":
+            if (!state.codeSolved) showKeypad();
+            else clue("The desk", "The drawer hangs open. There is nothing else inside, except a faint scent of cedar.");
+            break;
+          case "bookcase":
+            clue("The bookcase", "Old astronomy books fill the shelves. One space is empty, as though a book was recently taken. Dusty lettering on the shelf reads: “Look behind the sky.”");
+            break;
+          case "door":
+            if (state.keyFound) {
+              state.finished = true;
+              closeDialog();
+              document.getElementById("final-time").textContent = "You escaped in " + elapsed() + ".";
+              document.getElementById("win-screen").classList.add("open");
+            } else {
+              clue("The observatory door", "A heavy old lock holds the door fast. You will need to find a key somewhere in this room.");
+            }
+            break;
+          default:
+            break;
+        }
+      }
+
+      document.querySelectorAll(".hotspot").forEach(function (hotspot) {
+        hotspot.addEventListener("click", function () { explore(hotspot.dataset.object); });
+      });
+
+      document.getElementById("hint-button").addEventListener("click", function () {
+        var hints;
+        if (!state.chartFound) {
+          hints = ["Some old paintings have more to them than meets the eye.", "Take a closer look at the star chart above the desk."];
+        } else if (!state.codeSolved) {
+          hints = ["The chart's handwritten note is more than a bit of poetry.", "Try entering the three numbers in the order written: 3, 1, 4."];
+        } else if (!state.keyFound || state.items.indexOf("Brass key") === -1) {
+          hints = ["You have already found the key. Look in your satchel."];
+        } else {
+          hints = ["You have everything you need. Try the locked observatory door."];
+        }
+        var index = Math.min(state.hintLevel, hints.length - 1);
+        state.hintLevel += 1;
+        clue("A quiet hint", hints[index]);
+      });
+
+      document.getElementById("restart").addEventListener("click", resetGame);
+      document.getElementById("play-again").addEventListener("click", resetGame);
+      interaction.addEventListener("click", function (event) {
+        if (event.target === interaction) closeDialog();
+      });
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeDialog();
+      });
+
+      function resetGame() {
+        state.startedAt = Date.now();
+        state.items = [];
+        state.notes = [];
+        state.chartFound = false;
+        state.codeSolved = false;
+        state.keyFound = false;
+        state.hintLevel = 0;
+        state.finished = false;
+        document.getElementById("win-screen").classList.remove("open");
+        closeDialog();
+        status.textContent = "The observatory is quiet… for now.";
+        renderInventory();
+        renderJournal();
+      }
+
+      renderInventory();
+      window.setInterval(function () {
+        if (!state.finished) document.getElementById("timer").textContent = elapsed();
+      }, 1000);
+    }());
+  </script>
+</body>
+</html>
